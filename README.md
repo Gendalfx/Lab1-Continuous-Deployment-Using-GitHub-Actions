@@ -63,4 +63,9 @@ kubectl port-forward svc/nodejs-app 8081:80
 ```
 
 And we see:
+
 ![](images/1.png)
+
+And github actions:
+
+![](images/2.png)
