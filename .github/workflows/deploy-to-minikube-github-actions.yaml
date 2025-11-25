@@ -4,24 +4,27 @@ on: [push]
   
 jobs:
   job1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: build Node.js Docker Image and deploy to minikube
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Start minikube
-      uses: medyagh/setup-minikube@master
+      uses: medyagh/setup-minikube@v0.0.20
 
     - name: Try the cluster !
       run: kubectl get pods -A
 
-    - name: Build image
+    - name: Build image with dynamic tag
       run: |
-        export SHELL=/bin/bash
-        eval $(minikube -p minikube docker-env)
-        docker build -f ./Dockerfile -t devopshint/node-app:latest .
+        eval $(minikube -p minikube docker-env)  
+        docker build -f ./Dockerfile -t gendalfx/nodejs-app:${{ github.sha }} .
         echo -n "verifying images:"
-        docker images         
+        docker images
+
+    - name: Update Kubernetes deployment with new image
+      run: |
+        kubectl set image deployment/nodejs-app nodejs-app=gendalfx/nodejs-app:${{ github.sha }} --record
 
     - name: Deploy to minikube
       run: kubectl apply -f k8s-node-app.yaml
@@ -31,7 +34,29 @@ jobs:
         kubectl rollout status deployment/nodejs-app --timeout=180s
         kubectl get pods -o wide
 
-    - name: Test service URLs
+    - name: Get service URL and test with curl
       run: |
-        minikube service list
-        minikube service nodejs-app --url
+        SERVICE_URL=$(minikube service nodejs-app --url)
+        echo "Service URL: $SERVICE_URL"
+        
+        echo "Waiting for the application to respond..."
+        until curl -f $SERVICE_URL > /dev/null 2>&1; do
+          echo "Application is not ready yet, waiting..."
+          sleep 5
+        done
+        echo "Application is responding successfully!"
+
+    - name: Run additional health checks
+      run: |
+        SERVICE_URL=$(minikube service nodejs-app --url)
+        
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $SERVICE_URL)
+        echo "HTTP Status: $HTTP_STATUS"
+        
+
+        if [ "$HTTP_STATUS" -eq 200 ]; then
+          echo "Health check passed - application is healthy"
+        else
+          echo "Health check failed - application returned status: $HTTP_STATUS"
+          exit 1
+        fi

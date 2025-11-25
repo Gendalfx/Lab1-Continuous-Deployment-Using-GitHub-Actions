@@ -69,3 +69,16 @@ And we see:
 And github actions:
 
 ![](images/2.png)
+
+
+
+### 🛠 Implemented Improvements
+
+**Date:** November 26, 2025
+
+* **Environment Stability:** Pinned stable versions for all components to ensure consistency.
+* **Artifact Versioning:** Switched to immutable Docker tags using **`${{ github.sha }}`** with dynamic manifest updates during deployment.
+* **Quality Assurance:** Integrated an **Active Health Check** stage to verify deployment success.
+* **Refactoring:** Optimized configuration by removing redundant shell exports (`export SHELL=/bin/bash`).
+
+
