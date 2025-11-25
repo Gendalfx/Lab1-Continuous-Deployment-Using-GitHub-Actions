@@ -22,12 +22,12 @@ jobs:
         echo -n "verifying images:"
         docker images
 
+    - name: Deploy to minikube (initial deployment)
+      run: kubectl apply -f k8s-node-app.yaml
+
     - name: Update Kubernetes deployment with new image
       run: |
-        kubectl set image deployment/nodejs-app nodejs-app=gendalfx/nodejs-app:${{ github.sha }} --record
-
-    - name: Deploy to minikube
-      run: kubectl apply -f k8s-node-app.yaml
+        kubectl set image deployment/nodejs-app nodejs-app=gendalfx/nodejs-app:${{ github.sha }}
 
     - name: Wait for deployment to be ready
       run: |
@@ -53,7 +53,6 @@ jobs:
         HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $SERVICE_URL)
         echo "HTTP Status: $HTTP_STATUS"
         
-
         if [ "$HTTP_STATUS" -eq 200 ]; then
           echo "Health check passed - application is healthy"
         else
